@@ -15,7 +15,6 @@ export function useSpotifyAlbum(albumId: string) {
   const [album, setAlbum] = useState<AlbumData | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  // Récupérer le token
   useEffect(() => {
     async function fetchToken() {
       try {
@@ -34,7 +33,6 @@ export function useSpotifyAlbum(albumId: string) {
     fetchToken();
   }, []);
 
-  // Récupérer l'album
   useEffect(() => {
     if (!token || !albumId) return;
 

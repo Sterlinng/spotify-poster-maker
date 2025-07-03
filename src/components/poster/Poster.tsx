@@ -2,7 +2,21 @@ import { useEffect, useMemo } from "react";
 import { useSpotifyAlbum } from "@/hooks/useSpotifyAlbum";
 import { usePalette } from "@/hooks/usePalette";
 
-export default function Poster({ albumId }: { albumId: string }) {
+export type PosterProps = {
+  albumId: string;
+  grain: number;
+  blur: number;
+  setPalette: (palette: string[]) => void;
+  activeColors: number[];
+};
+
+export default function Poster({
+  albumId,
+  grain,
+  blur,
+  setPalette,
+  activeColors,
+}: PosterProps) {
   const album = useSpotifyAlbum(albumId);
   const palette = usePalette(album?.coverUrl);
 
@@ -28,8 +42,10 @@ export default function Poster({ albumId }: { albumId: string }) {
   );
 
   useEffect(() => {
-    if (palette.length === 5) console.log("Palette:", palette);
-  }, [palette]);
+    if (palette && palette.length) {
+      setPalette(palette);
+    }
+  }, [palette, setPalette]);
 
   if (!album) return <p>Loading album…</p>;
 
@@ -63,18 +79,30 @@ export default function Poster({ albumId }: { albumId: string }) {
       }}
     >
       <div
-        className="absolute inset-0 z-0 blur-[50px] opacity-40 scale-[1.2]"
+        className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
           backgroundImage: `url(${album.coverUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          filter: `blur(${20 + blur}px)`,
         }}
       />
 
       <div className="absolute inset-0 z-0 bg-black/40" />
 
       <div
-        className="relative z-10 text-white flex flex-col items-start"
+        className="absolute inset-0 z-50 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='grain'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='5' stitchTiles='stitch'/><feColorMatrix type='matrix' values='-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23grain)'/></svg>")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "100px 100px",
+          opacity: (grain / 100) * 0.4,
+          mixBlendMode: "screen",
+        }}
+      />
+
+      <div
+        className="relative z-40 text-white flex flex-col items-start"
         style={{ width: 500, marginBottom: 16 }}
       >
         <h1
@@ -92,16 +120,16 @@ export default function Poster({ albumId }: { albumId: string }) {
             {album.artist}
           </h2>
 
-          {palette.length === 5 && (
+          {palette.length > 0 && (
             <div className="flex gap-[6px]">
-              {palette.map((c: string, i: number) => (
+              {activeColors.map((index) => (
                 <div
-                  key={i}
+                  key={index}
                   style={{
                     width: 20,
                     height: 20,
                     borderRadius: "50%",
-                    backgroundColor: c,
+                    backgroundColor: palette[index],
                   }}
                 />
               ))}
@@ -110,7 +138,7 @@ export default function Poster({ albumId }: { albumId: string }) {
         </div>
       </div>
 
-      <div className="relative z-10 w-[500px] h-[500px] mt-[-10px]">
+      <div className="relative z-40 w-[500px] h-[500px] mt-[-10px]">
         <img
           src={album.coverUrl}
           alt={album.name}
@@ -119,7 +147,7 @@ export default function Poster({ albumId }: { albumId: string }) {
       </div>
 
       <div
-        className="relative z-10 flex justify-between items-start w-full px-[50px] mt-2"
+        className="relative z-40 flex justify-between items-start w-full px-[50px] mt-2"
         style={{ fontSize: trackFont }}
       >
         <div
@@ -138,8 +166,8 @@ export default function Poster({ albumId }: { albumId: string }) {
                     <div key={i} className="flex flex-col">
                       <div className="flex">
                         <span
-                          className="font-bold text-white mr-1"
-                          style={{ width: 18, textAlign: "right" }}
+                          className="font-bold text-white mr-1 flex-shrink-0"
+                          style={{ minWidth: 20, textAlign: "right" }}
                         >
                           {c * perCol + i + 1}.
                         </span>

@@ -375,8 +375,6 @@ import_dotenv.default.config();
 var handler = async (event, context) => {
   const client_id = process.env.SPOTIFY_CLIENT_ID;
   const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-  console.log("ID charg\xE9 :", client_id?.slice(0, 6));
-  console.log("Secret pr\xE9sent :", !!client_secret);
   const auth = Buffer.from(`${client_id}:${client_secret}`).toString("base64");
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
