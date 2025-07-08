@@ -75,7 +75,7 @@ export async function exportPosterPNG(
   }
 
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  const pr = isMobile ? 2 : 3;
+  const pr = isMobile ? 1 : 3;
 
   const dataUrl = await toPng(node, {
     cacheBust: true,
