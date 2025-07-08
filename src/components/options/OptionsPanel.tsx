@@ -100,17 +100,24 @@ export default function OptionsPanel({
     setShowSuccess(false);
 
     try {
-      const blob = await onExport(); // il faut que onExport renvoie le Blob
+      const blob = await onExport();
       const url = URL.createObjectURL(blob);
 
       const isMobile = /Mobi|Android/i.test(navigator.userAgent);
       if (isMobile) {
-        window.open(url, "_blank");
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          window.open(dataUrl, "_blank");
+        };
+        reader.readAsDataURL(blob);
       } else {
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = "poster.png";
         a.click();
+        URL.revokeObjectURL(url);
       }
 
       setShowSuccess(true);
