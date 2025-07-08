@@ -24,11 +24,9 @@ export default function Poster({
   );
 
   useEffect(() => {
-    if (!album?.coverUrl) return;
-    if (coverDataUrl) return; // déjà généré
-
     async function convertToDataUrl() {
-      if (!album) return;
+      if (!album?.coverUrl) return;
+
       const res = await fetch(album.coverUrl);
       const blob = await res.blob();
 
@@ -40,7 +38,7 @@ export default function Poster({
     }
 
     convertToDataUrl();
-  }, [album?.coverUrl, coverDataUrl]);
+  }, [album?.coverUrl]);
 
   const palette = usePalette(
     typeof coverDataUrl === "string" ? coverDataUrl : undefined
