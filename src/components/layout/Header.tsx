@@ -1,4 +1,4 @@
-import logo from "@/assets/spotify-logo.svg";
+import logo from "../../assets/spotify-logo.svg";
 
 export default function Header() {
   return (

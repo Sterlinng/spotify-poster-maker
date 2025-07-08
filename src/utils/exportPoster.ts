@@ -3,7 +3,7 @@ import { toPng } from "html-to-image";
 export async function exportPosterPNG(ref: React.RefObject<HTMLDivElement>) {
   if (!ref.current) return;
 
-  await (document as any).fonts.ready;
+  await (document as Document & { fonts: FontFaceSet }).fonts.ready;
 
   // Génère un canvas de bruit
   const noiseCanvas = document.createElement("canvas");
@@ -34,7 +34,7 @@ export async function exportPosterPNG(ref: React.RefObject<HTMLDivElement>) {
   // Snapshot
   const dataUrl = await toPng(ref.current, {
     cacheBust: true,
-    pixelRatio: 2,
+    pixelRatio: 4,
   });
 
   // Clean up

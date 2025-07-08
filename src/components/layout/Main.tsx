@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import OptionsPanel from "@/components/options/OptionsPanel";
+import OptionsPanel from "../options/OptionsPanel";
 import PosterFrame from "../poster/PosterFrame";
 import { exportPosterPNG } from "../../utils/exportPoster";
 
@@ -8,7 +8,9 @@ export default function Main() {
   const [grain, setGrain] = useState(0);
   const [blur, setBlur] = useState(25);
   const [palette, setPalette] = useState<string[]>([]);
-  const exportRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
 
   const [activeColors, setActiveColors] = useState<number[]>([]);
   useEffect(() => {

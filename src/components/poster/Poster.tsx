@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { useSpotifyAlbum } from "@/hooks/useSpotifyAlbum";
-import { usePalette } from "@/hooks/usePalette";
+import { useSpotifyAlbum } from "../../hooks/useSpotifyAlbum";
+import { usePalette } from "../../hooks/usePalette";
 
 export type PosterProps = {
   albumId: string;

@@ -5,12 +5,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { ColorPickerGrid } from "@/components/common/ColorPickerGrid";
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Slider } from "../ui/slider";
+import { ColorPickerGrid } from "../common/ColorPickerGrid";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { CheckCircle2Icon } from "lucide-react";
 
@@ -175,7 +174,7 @@ export default function OptionsPanel({
           value={[grain]}
           max={100}
           step={1}
-          onValueChange={(val: any) => onGrainChange(val[0])}
+          onValueChange={(val: number[]) => onGrainChange(val[0])}
         />
 
         <span className="text-sm font-semibold">Blur Intensity</span>
@@ -184,7 +183,7 @@ export default function OptionsPanel({
           min={0}
           max={50}
           step={1}
-          onValueChange={(val: any) => onBlurChange(val[0])}
+          onValueChange={(val: number[]) => onBlurChange(val[0])}
         />
 
         <div className="flex flex-col gap-1">
