@@ -18,10 +18,7 @@ export default function Poster({
   activeColors,
 }: PosterProps) {
   const album = useSpotifyAlbum(albumId);
-
-  const [coverDataUrl, setCoverDataUrl] = useState<string | ArrayBuffer | null>(
-    null
-  );
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!album?.coverUrl) return;
@@ -33,23 +30,25 @@ export default function Poster({
         const res = await fetch(album.coverUrl);
         const blob = await res.blob();
         const bmp = await createImageBitmap(blob);
-        const W = 500;
-        const H = (bmp.height / bmp.width) * W;
         const canvas = document.createElement("canvas");
-        canvas.width = W;
-        canvas.height = H;
-        canvas.getContext("2d")!.drawImage(bmp, 0, 0, W, H);
-        setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.8));
-      } catch (e) {
-        console.error(e);
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        canvas.getContext("2d")!.drawImage(bmp, 0, 0);
+        setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.9));
+      } catch (err) {
+        console.error(err);
         setCoverDataUrl(album.coverUrl);
       }
     })();
   }, [album?.coverUrl]);
 
-  const palette = usePalette(
-    typeof coverDataUrl === "string" ? coverDataUrl : undefined
-  );
+  const palette = usePalette(coverDataUrl || undefined);
+
+  useEffect(() => {
+    if (palette?.length) {
+      setPalette(palette);
+    }
+  }, [palette, setPalette]);
 
   const MAX_VISIBLE_TRACKS = 20;
   const MAX_LINES = 10;
@@ -57,7 +56,7 @@ export default function Poster({
 
   const visibleTracks = useMemo(
     () => (album ? album.tracklist.slice(0, MAX_VISIBLE_TRACKS) : []),
-    [album, MAX_VISIBLE_TRACKS]
+    [album]
   );
   const plusTracks = album ? album.tracklist.length - MAX_VISIBLE_TRACKS : 0;
 
@@ -71,12 +70,6 @@ export default function Poster({
       ),
     [visibleTracks, cols, perCol]
   );
-
-  useEffect(() => {
-    if (palette && palette.length) {
-      setPalette(palette);
-    }
-  }, [palette, setPalette]);
 
   if (!album) return <p>Loading album…</p>;
 
@@ -113,7 +106,6 @@ export default function Poster({
         className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
           backgroundImage: `url(${coverDataUrl})`,
-
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: `blur(${20 + blur}px)`,
@@ -139,7 +131,7 @@ export default function Poster({
           backgroundRepeat: "repeat",
           backgroundSize: "100px 100px",
           opacity: (grain / 100) * 0.4,
-          display: "none", // caché par défaut
+          display: "none",
         }}
       />
 
@@ -182,11 +174,14 @@ export default function Poster({
 
       <div className="relative z-40 w-[500px] h-[500px] mt-[-10px]">
         <img
-          src={typeof coverDataUrl === "string" ? coverDataUrl : undefined}
+          src={coverDataUrl || ""}
           alt={album.name}
           className="w-full h-full object-cover rounded-[4px]"
         />
       </div>
+
+      {/* <img> caché pour forcer html-to-image à charger l'image background */}
+      <img src={coverDataUrl || ""} style={{ display: "none" }} alt="" />
 
       <div
         className="relative z-40 flex justify-between items-start w-full px-[50px] mt-2"
