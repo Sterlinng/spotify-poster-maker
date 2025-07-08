@@ -24,20 +24,27 @@ export default function Poster({
   );
 
   useEffect(() => {
-    async function convertToDataUrl() {
-      if (!album?.coverUrl) return;
+    if (!album?.coverUrl) return;
 
-      const res = await fetch(album.coverUrl);
-      const blob = await res.blob();
+    setCoverDataUrl(null);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverDataUrl(reader.result);
-      };
-      reader.readAsDataURL(blob);
-    }
-
-    convertToDataUrl();
+    (async () => {
+      try {
+        const res = await fetch(album.coverUrl);
+        const blob = await res.blob();
+        const bmp = await createImageBitmap(blob);
+        const W = 500;
+        const H = (bmp.height / bmp.width) * W;
+        const canvas = document.createElement("canvas");
+        canvas.width = W;
+        canvas.height = H;
+        canvas.getContext("2d")!.drawImage(bmp, 0, 0, W, H);
+        setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.8));
+      } catch (e) {
+        console.error(e);
+        setCoverDataUrl(album.coverUrl);
+      }
+    })();
   }, [album?.coverUrl]);
 
   const palette = usePalette(
