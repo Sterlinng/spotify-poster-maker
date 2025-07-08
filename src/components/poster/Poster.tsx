@@ -102,15 +102,18 @@ export default function Poster({
         backgroundColor: "#000",
       }}
     >
-      <div
-        className="absolute inset-0 z-0 scale-[1.2] opacity-40"
-        style={{
-          backgroundImage: `url(${coverDataUrl})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: `blur(${20 + blur}px)`,
-        }}
-      />
+      <div className="absolute inset-0 z-0 scale-[1.2] opacity-40 overflow-hidden">
+        <img
+          src={coverDataUrl || ""}
+          alt=""
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: `blur(${20 + blur}px)`,
+          }}
+        />
+      </div>
 
       <div className="absolute inset-0 z-0 bg-black/40" />
 
