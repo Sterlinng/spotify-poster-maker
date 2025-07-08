@@ -1,13 +1,31 @@
 import { toPng } from "html-to-image";
 
+function waitForImagesToLoad(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll("img"));
+  const unloaded = images.filter((img) => !img.complete);
+
+  if (unloaded.length === 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let loaded = 0;
+    unloaded.forEach((img) => {
+      img.onload = img.onerror = () => {
+        loaded++;
+        if (loaded === unloaded.length) resolve();
+      };
+    });
+  });
+}
+
 export async function exportPosterPNG(
   ref: React.RefObject<HTMLDivElement>,
   scale: number
-) {
-  if (!ref.current) return Promise.reject(new Error("Ref non defini"));
-  await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+): Promise<Blob> {
+  if (!ref.current) return Promise.reject(new Error("Ref non défini"));
 
-  // grain bake (idem)
+  await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+  await waitForImagesToLoad(ref.current);
+
   const noiseCanvas = document.createElement("canvas");
   noiseCanvas.width = 100;
   noiseCanvas.height = 100;
@@ -31,14 +49,12 @@ export async function exportPosterPNG(
   }
 
   const node = ref.current;
-
-  // Taille physique sans scale
   const rect = node.getBoundingClientRect();
 
   const dataUrl = await toPng(node, {
     cacheBust: true,
     pixelRatio: 4,
-    width: rect.width / scale, // Divise par ton scale dynamique
+    width: rect.width / scale,
     height: rect.height / scale,
     style: {
       width: `${rect.width / scale}px`,
