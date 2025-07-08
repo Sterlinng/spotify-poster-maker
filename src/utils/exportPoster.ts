@@ -55,12 +55,15 @@ export async function exportPosterPNG(
   const pr = isMobile ? 2 : 3;
 
   const dataUrl = await toPng(node, {
+    cacheBust: true,
     pixelRatio: pr,
     width: rect.width / scale,
     height: rect.height / scale,
+    filter: (n) =>
+      !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
     style: {
-      width: `${rect.width / scale}px`, // ← back-ticks
-      height: `${rect.height / scale}px`, // ← back-ticks
+      width: `${rect.width / scale}px`,
+      height: `${rect.height / scale}px`,
       transform: "none",
       transformOrigin: "top left",
     },

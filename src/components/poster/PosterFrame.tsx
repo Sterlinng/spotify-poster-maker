@@ -22,8 +22,6 @@ export default function PosterFrame({
       style={{
         width: 600 * scale,
         height: 850 * scale,
-        transform: `scale(${scale})`,
-        transformOrigin: "top left",
       }}
     >
       <div

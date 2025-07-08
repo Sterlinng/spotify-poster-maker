@@ -105,10 +105,10 @@ export default function Poster({
       <div
         className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
-          backgroundImage: `url(${coverDataUrl})`, // ← back-ticks
+          backgroundImage: `url(${coverDataUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          filter: `blur(${20 + blur}px)`, // ← back-ticks
+          filter: `blur(${20 + blur}px)`,
         }}
       />
 
