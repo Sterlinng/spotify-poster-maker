@@ -51,6 +51,29 @@ export async function exportPosterPNG(
   const node = ref.current;
   const rect = node.getBoundingClientRect();
 
+  {
+    const imgs = Array.from(node.querySelectorAll("img")).map((img, i) => ({
+      i,
+      src: img.src,
+      complete: img.complete,
+      naturalWidth: img.naturalWidth,
+    }));
+    const blurDiv = node.querySelector(
+      ".absolute.inset-0.z-0.scale-\\[1\\.2\\]"
+    );
+    const bg = blurDiv
+      ? getComputedStyle(blurDiv as HTMLElement).backgroundImage
+      : "blur div non trouvée";
+
+    alert(
+      "DEBUG exportPosterPNG\n\n" +
+        "Images:\n" +
+        JSON.stringify(imgs, null, 2) +
+        "\n\nBlur background:\n" +
+        bg
+    );
+  }
+
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const pr = isMobile ? 2 : 3;
 
