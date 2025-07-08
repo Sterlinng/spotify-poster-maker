@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSpotifyAlbum } from "../../hooks/useSpotifyAlbum";
 import { usePalette } from "../../hooks/usePalette";
 
@@ -19,38 +19,28 @@ export default function Poster({
 }: PosterProps) {
   const album = useSpotifyAlbum(albumId);
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
-  const bgCanvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
     if (!album?.coverUrl) return;
+
     setCoverDataUrl(null);
+
     (async () => {
       try {
         const res = await fetch(album.coverUrl);
         const blob = await res.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => setCoverDataUrl(reader.result as string);
-        reader.readAsDataURL(blob);
-      } catch {
+        const bmp = await createImageBitmap(blob);
+        const canvas = document.createElement("canvas");
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        canvas.getContext("2d")!.drawImage(bmp, 0, 0);
+        setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.9));
+      } catch (err) {
+        console.error(err);
         setCoverDataUrl(album.coverUrl);
       }
     })();
   }, [album?.coverUrl]);
-
-  useEffect(() => {
-    if (!coverDataUrl || !bgCanvasRef.current) return;
-    const canvas = bgCanvasRef.current;
-    const ctx = canvas.getContext("2d")!;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = coverDataUrl;
-    img.onload = () => {
-      // on a déjà width=600*1.2 et height=850*1.2 via les props du canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = `blur(${20 + blur}px)`;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      ctx.filter = "none";
-    };
-  }, [coverDataUrl, blur]);
 
   const palette = usePalette(coverDataUrl || undefined);
 
@@ -112,14 +102,13 @@ export default function Poster({
         backgroundColor: "#000",
       }}
     >
-      <canvas
-        ref={bgCanvasRef}
-        className="absolute top-0 left-0 z-0"
-        width={600 * 1.2}
-        height={850 * 1.2}
+      <div
+        className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
-          width: 600,
-          height: 850,
+          backgroundImage: `url(${coverDataUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: `blur(${20 + blur}px)`,
         }}
       />
 
