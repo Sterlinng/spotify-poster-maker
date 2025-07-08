@@ -100,6 +100,16 @@ export default function Poster({
           mixBlendMode: "screen",
         }}
       />
+      <div
+        id="grain-bake"
+        className="absolute inset-0 z-50 pointer-events-none"
+        style={{
+          backgroundRepeat: "repeat",
+          backgroundSize: "100px 100px",
+          opacity: (grain / 100) * 0.4,
+          display: "none", // caché par défaut
+        }}
+      />
 
       <div
         className="relative z-40 text-white flex flex-col items-start"

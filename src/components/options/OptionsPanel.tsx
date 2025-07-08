@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ColorPickerGrid } from "@/components/common/ColorPickerGrid";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { CheckCircle2Icon } from "lucide-react";
 
 type Album = {
   id: string;
@@ -28,6 +30,7 @@ type OptionsPanelProps = {
   palette: string[];
   activeColors: number[];
   onToggleColor: (index: number) => void;
+  onExport: () => void;
 };
 
 export default function OptionsPanel({
@@ -39,10 +42,13 @@ export default function OptionsPanel({
   palette,
   activeColors,
   onToggleColor,
+  onExport,
 }: OptionsPanelProps) {
   const [results, setResults] = useState<Album[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   async function fetchAlbums(query: string) {
     if (!query) {
@@ -89,6 +95,20 @@ export default function OptionsPanel({
       setOpen(true);
     }
   }, [searchTerm]);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setShowSuccess(false);
+
+    try {
+      await onExport();
+      setShowSuccess(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <div className="w-full md:w-[400px] bg-spotify-sidebar text-spotify-white p-6 rounded-lg flex flex-col gap-4">
@@ -177,6 +197,54 @@ export default function OptionsPanel({
             activeColors={activeColors}
             onToggleColor={onToggleColor}
           />
+          <div className="mt-6">
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="w-full h-12 text-base font-semibold bg-spotify-green hover:bg-green-600 text-black"
+            >
+              {isExporting ? "Exporting…" : "Export"}
+            </Button>
+
+            {showSuccess && (
+              <div className="mt-4">
+                <Alert>
+                  <CheckCircle2Icon className="h-4 w-4" />
+                  <AlertTitle>Poster exported!</AlertTitle>
+                  <AlertDescription>
+                    Your poster has been saved as a PNG.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <div className="mt-6 border-t border-white/10 pt-4 text-center text-xs text-spotify-gray">
+              <p>
+                This site was built by{" "}
+                <a
+                  href="https://aminefodilcherif.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-white transition"
+                >
+                  Amine
+                </a>{" "}
+                as a personal project. Not affiliated with Spotify.
+              </p>
+              <p className="mt-2">
+                Like your poster?{" "}
+                <a
+                  href="https://ko-fi.com/aminefodilcherif"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-white transition"
+                >
+                  Buy me a coffee on Ko-fi
+                </a>
+                !
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

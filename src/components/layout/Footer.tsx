@@ -10,7 +10,7 @@ export default function Footer() {
       >
         Amine
       </a>{" "}
-      — Spotify Poster Maker
+      — Spotify Poster Maker v1.0.0 — not affiliated with Spotify.
     </footer>
   );
 }

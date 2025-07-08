@@ -4,7 +4,10 @@ import type { PosterProps } from "@/components/poster/Poster";
 import { usePosterScaleMobile } from "@/hooks/usePosterScaleMobile";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
-export default function PosterFrame(props: PosterProps) {
+export default function PosterFrame({
+  exportRef,
+  ...props
+}: PosterProps & { exportRef: React.RefObject<HTMLDivElement> }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const isDesktop = useIsDesktop(768);
   const scaleMobile = usePosterScaleMobile(frameRef);
@@ -21,6 +24,7 @@ export default function PosterFrame(props: PosterProps) {
       }}
     >
       <div
+        ref={exportRef}
         className="flex items-center justify-center w-full h-full"
         style={{
           width: 600,

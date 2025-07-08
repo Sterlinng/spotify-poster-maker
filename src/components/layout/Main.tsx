@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import OptionsPanel from "@/components/options/OptionsPanel";
 import PosterFrame from "../poster/PosterFrame";
+import { exportPosterPNG } from "../../utils/exportPoster";
 
 export default function Main() {
-  const [albumId, setAlbumId] = useState("748dZDqSZy6aPXKcI9H80u");
+  const [albumId, setAlbumId] = useState("4SZko61aMnmgvNhfhgTuD3");
   const [grain, setGrain] = useState(0);
   const [blur, setBlur] = useState(25);
   const [palette, setPalette] = useState<string[]>([]);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const [activeColors, setActiveColors] = useState<number[]>([]);
   useEffect(() => {
@@ -21,6 +23,7 @@ export default function Main() {
         blur={blur}
         setPalette={setPalette}
         activeColors={activeColors}
+        exportRef={exportRef}
       />
       <OptionsPanel
         onAlbumSelect={setAlbumId}
@@ -37,6 +40,7 @@ export default function Main() {
             setActiveColors([...activeColors, i]);
           }
         }}
+        onExport={() => exportPosterPNG(exportRef)}
       />
     </main>
   );
