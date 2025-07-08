@@ -206,7 +206,7 @@ export default function OptionsPanel({
         />
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">Palette Colors</span>
+          <span className="text-sm font-semibold">Colors</span>
           <span className="text-xs text-muted-foreground">
             Toggle colors to show or hide them on your poster (max 5).
           </span>
