@@ -3,7 +3,9 @@ import { toPng } from "html-to-image";
 function waitForImagesToLoad(container: HTMLElement): Promise<void> {
   const images = Array.from(container.querySelectorAll("img"));
   const unloaded = images.filter((img) => !img.complete);
+
   if (unloaded.length === 0) return Promise.resolve();
+
   return new Promise((resolve) => {
     let loaded = 0;
     unloaded.forEach((img) => {
@@ -16,7 +18,8 @@ function waitForImagesToLoad(container: HTMLElement): Promise<void> {
 }
 
 export async function exportPosterPNG(
-  ref: React.RefObject<HTMLDivElement>
+  ref: React.RefObject<HTMLDivElement>,
+  scale: number
 ): Promise<Blob> {
   if (!ref.current) return Promise.reject(new Error("Ref non défini"));
 
@@ -54,13 +57,13 @@ export async function exportPosterPNG(
   const dataUrl = await toPng(node, {
     cacheBust: true,
     pixelRatio: pr,
-    width: rect.width,
-    height: rect.height,
+    width: rect.width / scale,
+    height: rect.height / scale,
     filter: (n) =>
       !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
     style: {
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
+      width: `${rect.width / scale}px`,
+      height: `${rect.height / scale}px`,
       transform: "none",
       transformOrigin: "top left",
     },

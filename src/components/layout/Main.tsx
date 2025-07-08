@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import OptionsPanel from "../options/OptionsPanel";
 import PosterFrame from "../poster/PosterFrame";
 import { exportPosterPNG } from "../../utils/exportPoster";
+import { usePosterScaleMobile } from "../../hooks/usePosterScaleMobile";
 
 export default function Main() {
   const [albumId, setAlbumId] = useState("4SZko61aMnmgvNhfhgTuD3");
@@ -11,6 +12,8 @@ export default function Main() {
   const exportRef = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
+
+  const scale = usePosterScaleMobile();
 
   const [activeColors, setActiveColors] = useState<number[]>([]);
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function Main() {
             setActiveColors([...activeColors, i]);
           }
         }}
-        onExport={() => exportPosterPNG(exportRef)}
+        onExport={() => exportPosterPNG(exportRef, scale)}
       />
     </main>
   );
