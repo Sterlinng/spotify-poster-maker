@@ -246,7 +246,10 @@ export default function Poster({
 
           <div className="flex flex-col items-end">
             <span className="font-bold">Label</span>
-            <span className="text-spotify-gray text-[11px] font-light text-right w-full">
+            <span
+              className="text-spotify-gray text-[11px] font-light text-right whitespace-pre-wrap break-words"
+              style={{ maxWidth: 180 }}
+            >
               {album.label}
             </span>
           </div>

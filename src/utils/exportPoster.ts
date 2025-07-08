@@ -16,8 +16,7 @@ function waitForImagesToLoad(container: HTMLElement): Promise<void> {
 }
 
 export async function exportPosterPNG(
-  ref: React.RefObject<HTMLDivElement>,
-  scale: number
+  ref: React.RefObject<HTMLDivElement>
 ): Promise<Blob> {
   if (!ref.current) return Promise.reject(new Error("Ref non défini"));
 
@@ -55,13 +54,13 @@ export async function exportPosterPNG(
   const dataUrl = await toPng(node, {
     cacheBust: true,
     pixelRatio: pr,
-    width: rect.width / scale,
-    height: rect.height / scale,
+    width: rect.width,
+    height: rect.height,
     filter: (n) =>
       !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
     style: {
-      width: `${rect.width / scale}px`,
-      height: `${rect.height / scale}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
       transform: "none",
       transformOrigin: "top left",
     },
