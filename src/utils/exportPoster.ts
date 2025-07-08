@@ -53,7 +53,7 @@ export async function exportPosterPNG(
 
   const dataUrl = await toPng(node, {
     cacheBust: true,
-    pixelRatio: 2,
+    pixelRatio: 3,
     width: rect.width / scale,
     height: rect.height / scale,
     style: {
