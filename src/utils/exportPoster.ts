@@ -3,9 +3,7 @@ import { toPng } from "html-to-image";
 function waitForImagesToLoad(container: HTMLElement): Promise<void> {
   const images = Array.from(container.querySelectorAll("img"));
   const unloaded = images.filter((img) => !img.complete);
-
   if (unloaded.length === 0) return Promise.resolve();
-
   return new Promise((resolve) => {
     let loaded = 0;
     unloaded.forEach((img) => {
