@@ -29,7 +29,7 @@ type OptionsPanelProps = {
   palette: string[];
   activeColors: number[];
   onToggleColor: (index: number) => void;
-  onExport: () => void;
+  onExport: () => Promise<Blob>;
 };
 
 export default function OptionsPanel({
@@ -100,8 +100,21 @@ export default function OptionsPanel({
     setShowSuccess(false);
 
     try {
-      await onExport();
+      const blob = await onExport(); // il faut que onExport renvoie le Blob
+      const url = URL.createObjectURL(blob);
+
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.open(url, "_blank");
+      } else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "poster.png";
+        a.click();
+      }
+
       setShowSuccess(true);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
     } finally {

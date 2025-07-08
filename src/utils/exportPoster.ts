@@ -1,62 +1,59 @@
 import { toPng } from "html-to-image";
 
-export function exportPosterPNG(ref: React.RefObject<HTMLDivElement>) {
-  if (!ref.current) return;
+export async function exportPosterPNG(
+  ref: React.RefObject<HTMLDivElement>,
+  scale: number
+) {
+  if (!ref.current) return Promise.reject(new Error("Ref non defini"));
+  await (document as Document & { fonts: FontFaceSet }).fonts.ready;
 
-  (document as Document & { fonts: FontFaceSet }).fonts.ready.then(() => {
-    // Génère un canvas de bruit
-    const noiseCanvas = document.createElement("canvas");
-    noiseCanvas.width = 100;
-    noiseCanvas.height = 100;
-    const ctx = noiseCanvas.getContext("2d");
-
-    if (ctx) {
-      const imageData = ctx.createImageData(100, 100);
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const shade = Math.random() * 255;
-        imageData.data[i] = shade;
-        imageData.data[i + 1] = shade;
-        imageData.data[i + 2] = shade;
-        imageData.data[i + 3] = 40;
-      }
-      ctx.putImageData(imageData, 0, 0);
+  // grain bake (idem)
+  const noiseCanvas = document.createElement("canvas");
+  noiseCanvas.width = 100;
+  noiseCanvas.height = 100;
+  const ctx = noiseCanvas.getContext("2d");
+  if (ctx) {
+    const imageData = ctx.createImageData(100, 100);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      const shade = Math.random() * 255;
+      imageData.data[i] = shade;
+      imageData.data[i + 1] = shade;
+      imageData.data[i + 2] = shade;
+      imageData.data[i + 3] = 40;
     }
+    ctx.putImageData(imageData, 0, 0);
+  }
+  const noiseURL = noiseCanvas.toDataURL("image/png");
+  const grainBake = document.getElementById("grain-bake");
+  if (grainBake) {
+    grainBake.style.backgroundImage = `url(${noiseURL})`;
+    grainBake.style.display = "block";
+  }
 
-    const noiseURL = noiseCanvas.toDataURL("image/png");
+  const node = ref.current;
 
-    const grainBake = document.getElementById("grain-bake");
-    if (grainBake) {
-      grainBake.style.backgroundImage = `url(${noiseURL})`;
-      grainBake.style.display = "block";
-    }
+  // Taille physique sans scale
+  const rect = node.getBoundingClientRect();
 
-    toPng(ref.current!, {
-      cacheBust: true,
-      pixelRatio: 4,
-    })
-      .then((dataUrl) => {
-        if (grainBake) {
-          grainBake.style.display = "none";
-          grainBake.style.backgroundImage = "";
-        }
-
-        const link = document.createElement("a");
-        link.download = "poster.png";
-        link.href = dataUrl;
-
-        // 🚩 Fallback pour iOS : ouvre dans un nouvel onglet si download bloqué
-        if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-          window.open(dataUrl, "_blank");
-        } else {
-          link.click();
-        }
-      })
-      .catch((err) => {
-        console.error("Export error:", err);
-        if (grainBake) {
-          grainBake.style.display = "none";
-          grainBake.style.backgroundImage = "";
-        }
-      });
+  const dataUrl = await toPng(node, {
+    cacheBust: true,
+    pixelRatio: 4,
+    width: rect.width / scale, // Divise par ton scale dynamique
+    height: rect.height / scale,
+    style: {
+      width: `${rect.width / scale}px`,
+      height: `${rect.height / scale}px`,
+      transform: "none",
+      transformOrigin: "top left",
+    },
+    backgroundColor: "#000",
   });
+
+  if (grainBake) {
+    grainBake.style.display = "none";
+    grainBake.style.backgroundImage = "";
+  }
+
+  const resp = await fetch(dataUrl);
+  return resp.blob();
 }
