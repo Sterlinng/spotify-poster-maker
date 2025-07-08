@@ -1,23 +1,18 @@
-import { useRef } from "react";
-import Poster from "../poster/Poster";
-import type { PosterProps } from "../poster/Poster";
 import { usePosterScaleMobile } from "../../hooks/usePosterScaleMobile";
 import { useIsDesktop } from "../../hooks/useIsDesktop";
+import Poster from "../poster/Poster";
+import type { PosterProps } from "../poster/Poster";
 
 export default function PosterFrame({
   exportRef,
   ...props
 }: PosterProps & { exportRef: React.RefObject<HTMLDivElement> }) {
-  const frameRef = useRef<HTMLDivElement>(null);
+  const rawScale = usePosterScaleMobile();
   const isDesktop = useIsDesktop(768);
-  // @ts-expect-error: HTMLDivElement is assignable to HTMLElement
-  const scaleMobile = usePosterScaleMobile(frameRef);
-
-  const scale = isDesktop ? 1 : scaleMobile;
+  const scale = isDesktop ? 1 : rawScale;
 
   return (
     <div
-      ref={frameRef}
       className="relative flex-shrink-0"
       style={{
         width: 600 * scale,
