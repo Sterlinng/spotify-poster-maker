@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSpotifyAlbum } from "../../hooks/useSpotifyAlbum";
 import { usePalette } from "../../hooks/usePalette";
 
@@ -18,11 +18,31 @@ export default function Poster({
   activeColors,
 }: PosterProps) {
   const album = useSpotifyAlbum(albumId);
-  const palette = usePalette(album?.coverUrl);
 
-  const proxiedCoverUrl = album
-    ? `/api/image-proxy?url=${encodeURIComponent(album.coverUrl)}`
-    : null;
+  const [coverDataUrl, setCoverDataUrl] = useState<string | ArrayBuffer | null>(
+    null
+  );
+
+  useEffect(() => {
+    async function convertToDataUrl() {
+      if (!album?.coverUrl) return;
+
+      const res = await fetch(album.coverUrl);
+      const blob = await res.blob();
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverDataUrl(reader.result);
+      };
+      reader.readAsDataURL(blob);
+    }
+
+    convertToDataUrl();
+  }, [album?.coverUrl]);
+
+  const palette = usePalette(
+    typeof coverDataUrl === "string" ? coverDataUrl : undefined
+  );
 
   const MAX_VISIBLE_TRACKS = 20;
   const MAX_LINES = 10;
@@ -85,7 +105,8 @@ export default function Poster({
       <div
         className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
-          backgroundImage: `url(${proxiedCoverUrl})`,
+          backgroundImage: `url(${coverDataUrl})`,
+
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: `blur(${20 + blur}px)`,
@@ -154,7 +175,7 @@ export default function Poster({
 
       <div className="relative z-40 w-[500px] h-[500px] mt-[-10px]">
         <img
-          src={proxiedCoverUrl ?? undefined}
+          src={typeof coverDataUrl === "string" ? coverDataUrl : undefined}
           alt={album.name}
           className="w-full h-full object-cover rounded-[4px]"
         />
