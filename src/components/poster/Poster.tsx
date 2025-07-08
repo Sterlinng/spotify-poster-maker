@@ -20,6 +20,10 @@ export default function Poster({
   const album = useSpotifyAlbum(albumId);
   const palette = usePalette(album?.coverUrl);
 
+  const proxiedCoverUrl = album
+    ? `/api/image-proxy?url=${encodeURIComponent(album.coverUrl)}`
+    : null;
+
   const MAX_VISIBLE_TRACKS = 20;
   const MAX_LINES = 10;
   const MAX_COLS = 2;
@@ -81,7 +85,7 @@ export default function Poster({
       <div
         className="absolute inset-0 z-0 scale-[1.2] opacity-40"
         style={{
-          backgroundImage: `url(${album.coverUrl})`,
+          backgroundImage: `url(${proxiedCoverUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: `blur(${20 + blur}px)`,
@@ -150,7 +154,7 @@ export default function Poster({
 
       <div className="relative z-40 w-[500px] h-[500px] mt-[-10px]">
         <img
-          src={album.coverUrl}
+          src={proxiedCoverUrl ?? undefined}
           alt={album.name}
           className="w-full h-full object-cover rounded-[4px]"
         />
