@@ -48,6 +48,7 @@ export default function OptionsPanel({
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   async function fetchAlbums(query: string) {
     if (!query) {
@@ -98,17 +99,17 @@ export default function OptionsPanel({
   async function handleExport() {
     setIsExporting(true);
     setShowSuccess(false);
+    setPreviewUrl(null);
 
     try {
       const blob = await onExport();
-      const url = URL.createObjectURL(blob);
-
       const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
       if (isMobile) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          const dataUrl = reader.result as string;
-          window.open(dataUrl, "_blank");
+          setPreviewUrl(reader.result as string);
+          setShowSuccess(true);
         };
         reader.readAsDataURL(blob);
       } else {
@@ -118,12 +119,10 @@ export default function OptionsPanel({
         a.download = "poster.png";
         a.click();
         URL.revokeObjectURL(url);
+        setShowSuccess(true);
       }
-
-      setShowSuccess(true);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsExporting(false);
     }
@@ -224,6 +223,15 @@ export default function OptionsPanel({
             >
               {isExporting ? "Exporting…" : "Export"}
             </Button>
+
+            {previewUrl && (
+              <div className="mt-4">
+                <img src={previewUrl} alt="poster preview" className="w-full" />
+                <p className="text-xs text-center mt-1">
+                  Long-press the image to save it
+                </p>
+              </div>
+            )}
 
             {showSuccess && (
               <div className="mt-4">

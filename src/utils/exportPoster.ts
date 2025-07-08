@@ -51,9 +51,12 @@ export async function exportPosterPNG(
   const node = ref.current;
   const rect = node.getBoundingClientRect();
 
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  const pr = isMobile ? 2 : 3;
+
   const dataUrl = await toPng(node, {
     cacheBust: true,
-    pixelRatio: 3,
+    pixelRatio: pr, // ← ici
     width: rect.width / scale,
     height: rect.height / scale,
     style: {
