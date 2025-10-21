@@ -45,6 +45,17 @@ export async function exportPosterPNG(
   console.log("[Export] scale:", scale);
   console.log("[Export] rect:", rect);
 
+  // Cacher les éléments normaux et afficher les versions export
+  const hideElements = node.querySelectorAll(".export-hide");
+  const showElements = node.querySelectorAll(".export-only");
+
+  hideElements.forEach((el) => {
+    (el as HTMLElement).style.display = "none";
+  });
+  showElements.forEach((el) => {
+    (el as HTMLElement).style.display = "block";
+  });
+
   try {
     const canvas = await html2canvas(node, {
       allowTaint: true,
@@ -53,7 +64,7 @@ export async function exportPosterPNG(
       width: rect.width / scale,
       height: rect.height / scale,
       backgroundColor: "#000000",
-      logging: true,
+      logging: false,
       imageTimeout: 15000,
       onclone: (clonedDoc) => {
         const clonedNode = clonedDoc.querySelector(
@@ -69,6 +80,14 @@ export async function exportPosterPNG(
     });
 
     console.log("[Export] Canvas created:", canvas.width, "x", canvas.height);
+
+    // Restaurer l'affichage normal
+    hideElements.forEach((el) => {
+      (el as HTMLElement).style.display = "";
+    });
+    showElements.forEach((el) => {
+      (el as HTMLElement).style.display = "none";
+    });
 
     // Cacher le grain
     if (grainBake) {
@@ -92,6 +111,14 @@ export async function exportPosterPNG(
       );
     });
   } catch (error) {
+    // Restaurer l'affichage normal en cas d'erreur
+    hideElements.forEach((el) => {
+      (el as HTMLElement).style.display = "";
+    });
+    showElements.forEach((el) => {
+      (el as HTMLElement).style.display = "none";
+    });
+
     // Cacher le grain en cas d'erreur
     if (grainBake) {
       grainBake.style.display = "none";
