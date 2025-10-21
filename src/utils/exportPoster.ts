@@ -1,35 +1,5 @@
 import html2canvas from "html2canvas";
 
-// Fonction pour appliquer un flou gaussien sur un canvas
-function applyGaussianBlur(
-  canvas: HTMLCanvasElement,
-  radius: number
-): HTMLCanvasElement {
-  if (radius === 0) return canvas;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
-
-  // Utiliser la bibliothèque StackBlur pour un vrai flou gaussien performant
-  // Pour l'instant, on utilise une approximation via filter
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  const tempCtx = tempCanvas.getContext("2d");
-
-  if (tempCtx) {
-    // Dessiner l'image originale
-    tempCtx.drawImage(canvas, 0, 0);
-
-    // Appliquer le filtre blur (supporté dans canvas)
-    tempCtx.filter = `blur(${radius}px)`;
-    tempCtx.drawImage(tempCanvas, 0, 0);
-    tempCtx.filter = "none";
-  }
-
-  return tempCanvas;
-}
-
 // Fonction pour appliquer du grain sur un canvas
 function applyGrain(
   canvas: HTMLCanvasElement,
