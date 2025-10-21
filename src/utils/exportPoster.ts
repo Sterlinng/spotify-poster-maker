@@ -1,57 +1,67 @@
 import html2canvas from "html2canvas";
 
-// Fonction pour appliquer du grain sur un canvas
-function applyGrain(
-  canvas: HTMLCanvasElement,
-  intensity: number
-): HTMLCanvasElement {
-  if (intensity === 0) return canvas;
+/**
+ * Applique un effet de grain sur un canvas
+ */
+function applyGrainEffect(canvas: HTMLCanvasElement, intensity: number): void {
+  if (intensity === 0) return;
 
   const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
+  if (!ctx) return;
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Appliquer le grain
-  const grainIntensity = (intensity / 100) * 40; // Max 40 de variation
+  // Intensité du grain (0-100 -> 0-50 de variation)
+  const grainAmount = (intensity / 100) * 50;
 
   for (let i = 0; i < data.length; i += 4) {
-    const grain = (Math.random() - 0.5) * grainIntensity;
-    data[i] += grain; // R
-    data[i + 1] += grain; // G
-    data[i + 2] += grain; // B
-    // Alpha reste inchangé
+    const noise = (Math.random() - 0.5) * grainAmount;
+    data[i] += noise;     // R
+    data[i + 1] += noise; // G
+    data[i + 2] += noise; // B
+    // Alpha inchangé
   }
 
   ctx.putImageData(imageData, 0, 0);
-  return canvas;
 }
 
+/**
+ * Exporte le poster en PNG avec les effets blur et grain appliqués
+ */
 export async function exportPosterPNG(
   ref: React.RefObject<HTMLDivElement>,
   scale: number,
   blurAmount: number,
   grainAmount: number
 ): Promise<Blob> {
-  if (!ref.current) return Promise.reject(new Error("Ref non défini"));
+  if (!ref.current) {
+    return Promise.reject(new Error("Ref non défini"));
+  }
+
+  console.log("[Export] Starting export with blur:", blurAmount, "grain:", grainAmount);
 
   // Attendre que les polices soient chargées
   await (document as Document & { fonts: FontFaceSet }).fonts.ready;
 
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-  // Attendre que tout soit rendu
-  await new Promise((resolve) => setTimeout(resolve, isMobile ? 800 : 500));
+  // Délai pour s'assurer que tout est rendu
+  await new Promise((resolve) => setTimeout(resolve, isMobile ? 1000 : 600));
 
   const node = ref.current;
   const rect = node.getBoundingClientRect();
 
-  console.log("[Export] Starting capture with blur:", blurAmount, "grain:", grainAmount);
+  // Masquer le grain SVG pendant la capture (on l'appliquera après)
+  const grainSvg = node.querySelector(".grain-svg") as HTMLElement;
+  const originalGrainDisplay = grainSvg ? grainSvg.style.display : "";
+  if (grainSvg) {
+    grainSvg.style.display = "none";
+  }
 
   try {
-    // Capturer le poster de base sans effets CSS complexes
-    let canvas = await html2canvas(node, {
+    // Capturer le poster tel quel avec html2canvas
+    const canvas = await html2canvas(node, {
       allowTaint: true,
       useCORS: true,
       scale: isMobile ? 3 : 4,
@@ -60,22 +70,6 @@ export async function exportPosterPNG(
       backgroundColor: "#000000",
       logging: false,
       imageTimeout: 15000,
-      ignoreElements: (element) => {
-        // Ignorer le grain ET l'image de fond pendant la capture (on va la redessiner avec blur)
-        if (element.id === "grain-bake" || element.classList.contains("grain-svg")) {
-          return true;
-        }
-        // Ignorer les images de fond (on va les redessiner avec blur)
-        if (element.tagName === "IMG") {
-          const img = element as HTMLImageElement;
-          const parentDiv = img.parentElement;
-          // L'image de fond est dans un div avec scale-[1.2]
-          if (parentDiv && parentDiv.className.includes("scale-[1.2]")) {
-            return true;
-          }
-        }
-        return false;
-      },
       onclone: (clonedDoc) => {
         const clonedNode = clonedDoc.querySelector(
           `[data-export-ref="true"]`
@@ -86,130 +80,27 @@ export async function exportPosterPNG(
           clonedNode.style.transform = "none";
           clonedNode.style.transformOrigin = "top left";
         }
-
-        // Supprimer les filtres CSS qui ne sont pas supportés
-        const allElements = clonedDoc.querySelectorAll("*");
-        allElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl.style && htmlEl.style.filter) {
-            htmlEl.style.filter = "none";
-          }
-        });
       },
     });
 
-    console.log("[Export] Base canvas created:", canvas.width, "x", canvas.height);
+    console.log("[Export] Canvas captured:", canvas.width, "x", canvas.height);
 
-    // Post-traitement : appliquer le blur manuellement
-    // On doit blur uniquement l'image de fond, donc on va faire différemment
-    // On va créer un nouveau canvas composite
-
-    const finalCanvas = document.createElement("canvas");
-    finalCanvas.width = canvas.width;
-    finalCanvas.height = canvas.height;
-    const finalCtx = finalCanvas.getContext("2d");
-
-    if (!finalCtx) {
-      throw new Error("Could not get canvas context");
+    // Restaurer le grain SVG
+    if (grainSvg) {
+      grainSvg.style.display = originalGrainDisplay;
     }
 
-    // 1. Récupérer l'image de couverture de l'album - chercher la première image du poster
-    const allImages = Array.from(node.querySelectorAll("img"));
-    console.log("[Export] Found", allImages.length, "images in poster");
-
-    const coverImg = allImages.find(img => {
-      const htmlImg = img as HTMLImageElement;
-      return htmlImg.src && htmlImg.src.startsWith("data:image/");
-    }) as HTMLImageElement | undefined;
-
-    if (coverImg && coverImg.src) {
-      console.log("[Export] Processing cover image with blur");
-      console.log("[Export] Blur amount:", blurAmount);
-
-      // Créer un canvas pour l'image de fond floutée
-      const bgCanvas = document.createElement("canvas");
-      bgCanvas.width = finalCanvas.width;
-      bgCanvas.height = finalCanvas.height;
-      const bgCtx = bgCanvas.getContext("2d", { willReadFrequently: false });
-
-      if (bgCtx) {
-        // Charger et dessiner l'image de fond
-        const img = new Image();
-
-        await new Promise<void>((resolve) => {
-          img.onload = () => {
-            console.log("[Export] Image loaded, dimensions:", img.width, "x", img.height);
-
-            // Fond noir
-            bgCtx.fillStyle = "#000";
-            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-
-            // Zone pour l'image de fond (scaled 1.2x, opacity 40%)
-            const scaleFactor = 1.2;
-            const imgWidth = bgCanvas.width * scaleFactor;
-            const imgHeight = bgCanvas.height * scaleFactor;
-            const offsetX = (bgCanvas.width - imgWidth) / 2;
-            const offsetY = (bgCanvas.height - imgHeight) / 2;
-
-            // Créer un canvas temporaire pour appliquer le blur
-            const blurCanvas = document.createElement("canvas");
-            blurCanvas.width = bgCanvas.width;
-            blurCanvas.height = bgCanvas.height;
-            const blurCtx = blurCanvas.getContext("2d", { willReadFrequently: false });
-
-            if (blurCtx) {
-              // Dessiner l'image sur le canvas temporaire
-              blurCtx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
-
-              // Appliquer le filtre blur
-              const blurPx = (20 + blurAmount) * (isMobile ? 0.5 : 0.667); // Ajuster pour la résolution
-              console.log("[Export] Applying blur:", blurPx, "px");
-              blurCtx.filter = `blur(${blurPx}px)`;
-              blurCtx.drawImage(blurCanvas, 0, 0);
-              blurCtx.filter = "none";
-
-              // Dessiner le résultat avec opacité sur le fond
-              bgCtx.globalAlpha = 0.4;
-              bgCtx.drawImage(blurCanvas, 0, 0);
-              bgCtx.globalAlpha = 1.0;
-
-              // Overlay noir semi-transparent
-              bgCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-              bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-
-              console.log("[Export] Background with blur ready");
-            }
-
-            resolve();
-          };
-          img.onerror = (err) => {
-            console.error("[Export] Image load error:", err);
-            resolve();
-          };
-          img.src = coverImg.src;
-        });
-
-        // Dessiner le fond flouté sur le canvas final
-        finalCtx.drawImage(bgCanvas, 0, 0);
-      }
-    } else {
-      console.warn("[Export] No cover image found!");
-    }
-
-    // 2. Dessiner le contenu principal par-dessus (sans le fond)
-    finalCtx.drawImage(canvas, 0, 0);
-
-    // 3. Appliquer le grain si nécessaire
+    // Appliquer le grain si nécessaire
     if (grainAmount > 0) {
-      console.log("[Export] Applying grain");
-      applyGrain(finalCanvas, grainAmount);
+      console.log("[Export] Applying grain effect");
+      applyGrainEffect(canvas, grainAmount);
     }
 
-    console.log("[Export] Final canvas ready");
+    console.log("[Export] Export complete");
 
     // Convertir en blob
     return new Promise((resolve, reject) => {
-      finalCanvas.toBlob(
+      canvas.toBlob(
         (blob) => {
           if (blob) {
             console.log("[Export] Blob created, size:", blob.size);
@@ -223,6 +114,10 @@ export async function exportPosterPNG(
       );
     });
   } catch (error) {
+    // Restaurer le grain SVG en cas d'erreur
+    if (grainSvg) {
+      grainSvg.style.display = originalGrainDisplay;
+    }
     console.error("[Export] Error:", error);
     throw error;
   }
