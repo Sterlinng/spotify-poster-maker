@@ -130,7 +130,7 @@ export default function OptionsPanel({
 
   return (
     <div className="w-full md:w-[400px] bg-spotify-sidebar text-spotify-white p-6 rounded-lg flex flex-col gap-4">
-      <h2 className="text-xl font-bold">Options</h2>
+      <h2 className="text-xl font-bold">Options (test)</h2>
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-semibold">Choose your Album</span>

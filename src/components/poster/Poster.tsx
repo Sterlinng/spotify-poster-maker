@@ -29,15 +29,36 @@ export default function Poster({
       try {
         const res = await fetch(album.coverUrl);
         const blob = await res.blob();
-        const bmp = await createImageBitmap(blob);
-        const canvas = document.createElement("canvas");
-        canvas.width = bmp.width;
-        canvas.height = bmp.height;
-        canvas.getContext("2d")!.drawImage(bmp, 0, 0);
-        setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.9));
+
+        // Créer une data URL directement depuis le blob pour une meilleure compatibilité mobile
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setCoverDataUrl(reader.result as string);
+        };
+        reader.onerror = () => {
+          console.error("Error reading blob");
+          setCoverDataUrl(album.coverUrl);
+        };
+        reader.readAsDataURL(blob);
       } catch (err) {
         console.error(err);
-        setCoverDataUrl(album.coverUrl);
+        // En cas d'erreur, essayer de créer une data URL via canvas
+        try {
+          const res = await fetch(album.coverUrl);
+          const blob = await res.blob();
+          const bmp = await createImageBitmap(blob);
+          const canvas = document.createElement("canvas");
+          canvas.width = bmp.width;
+          canvas.height = bmp.height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(bmp, 0, 0);
+            setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.95));
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback error:", fallbackErr);
+          setCoverDataUrl(album.coverUrl);
+        }
       }
     })();
   }, [album?.coverUrl]);
