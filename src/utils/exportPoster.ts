@@ -61,8 +61,20 @@ export async function exportPosterPNG(
       logging: false,
       imageTimeout: 15000,
       ignoreElements: (element) => {
-        // Ignorer les éléments de grain pendant la capture
-        return element.id === "grain-bake" || element.classList.contains("grain-svg");
+        // Ignorer le grain ET l'image de fond pendant la capture (on va la redessiner avec blur)
+        if (element.id === "grain-bake" || element.classList.contains("grain-svg")) {
+          return true;
+        }
+        // Ignorer les images de fond (on va les redessiner avec blur)
+        if (element.tagName === "IMG") {
+          const img = element as HTMLImageElement;
+          const parentDiv = img.parentElement;
+          // L'image de fond est dans un div avec scale-[1.2]
+          if (parentDiv && parentDiv.className.includes("scale-[1.2]")) {
+            return true;
+          }
+        }
+        return false;
       },
       onclone: (clonedDoc) => {
         const clonedNode = clonedDoc.querySelector(
@@ -101,28 +113,37 @@ export async function exportPosterPNG(
       throw new Error("Could not get canvas context");
     }
 
-    // 1. Récupérer l'image de couverture de l'album
-    const coverImg = node.querySelector("img[alt]:not([alt=''])") as HTMLImageElement;
+    // 1. Récupérer l'image de couverture de l'album - chercher la première image du poster
+    const allImages = Array.from(node.querySelectorAll("img"));
+    console.log("[Export] Found", allImages.length, "images in poster");
+
+    const coverImg = allImages.find(img => {
+      const htmlImg = img as HTMLImageElement;
+      return htmlImg.src && htmlImg.src.startsWith("data:image/");
+    }) as HTMLImageElement | undefined;
+
     if (coverImg && coverImg.src) {
       console.log("[Export] Processing cover image with blur");
+      console.log("[Export] Blur amount:", blurAmount);
 
       // Créer un canvas pour l'image de fond floutée
       const bgCanvas = document.createElement("canvas");
       bgCanvas.width = finalCanvas.width;
       bgCanvas.height = finalCanvas.height;
-      const bgCtx = bgCanvas.getContext("2d");
+      const bgCtx = bgCanvas.getContext("2d", { willReadFrequently: false });
 
       if (bgCtx) {
-        // Dessiner le fond noir
-        bgCtx.fillStyle = "#000";
-        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-
         // Charger et dessiner l'image de fond
         const img = new Image();
-        img.crossOrigin = "anonymous";
 
         await new Promise<void>((resolve) => {
           img.onload = () => {
+            console.log("[Export] Image loaded, dimensions:", img.width, "x", img.height);
+
+            // Fond noir
+            bgCtx.fillStyle = "#000";
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
             // Zone pour l'image de fond (scaled 1.2x, opacity 40%)
             const scaleFactor = 1.2;
             const imgWidth = bgCanvas.width * scaleFactor;
@@ -130,31 +151,49 @@ export async function exportPosterPNG(
             const offsetX = (bgCanvas.width - imgWidth) / 2;
             const offsetY = (bgCanvas.height - imgHeight) / 2;
 
-            // Dessiner l'image
-            bgCtx.globalAlpha = 0.4;
-            bgCtx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
-            bgCtx.globalAlpha = 1.0;
+            // Créer un canvas temporaire pour appliquer le blur
+            const blurCanvas = document.createElement("canvas");
+            blurCanvas.width = bgCanvas.width;
+            blurCanvas.height = bgCanvas.height;
+            const blurCtx = blurCanvas.getContext("2d", { willReadFrequently: false });
 
-            // Appliquer le filtre blur
-            if (blurAmount > 0) {
-              bgCtx.filter = `blur(${(20 + blurAmount) * (isMobile ? 3 : 4)}px)`;
-              bgCtx.drawImage(bgCanvas, 0, 0);
-              bgCtx.filter = "none";
+            if (blurCtx) {
+              // Dessiner l'image sur le canvas temporaire
+              blurCtx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
+
+              // Appliquer le filtre blur
+              const blurPx = (20 + blurAmount) * (isMobile ? 0.5 : 0.667); // Ajuster pour la résolution
+              console.log("[Export] Applying blur:", blurPx, "px");
+              blurCtx.filter = `blur(${blurPx}px)`;
+              blurCtx.drawImage(blurCanvas, 0, 0);
+              blurCtx.filter = "none";
+
+              // Dessiner le résultat avec opacité sur le fond
+              bgCtx.globalAlpha = 0.4;
+              bgCtx.drawImage(blurCanvas, 0, 0);
+              bgCtx.globalAlpha = 1.0;
+
+              // Overlay noir semi-transparent
+              bgCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
+              bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+              console.log("[Export] Background with blur ready");
             }
-
-            // Overlay noir semi-transparent
-            bgCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
 
             resolve();
           };
-          img.onerror = () => resolve();
+          img.onerror = (err) => {
+            console.error("[Export] Image load error:", err);
+            resolve();
+          };
           img.src = coverImg.src;
         });
 
         // Dessiner le fond flouté sur le canvas final
         finalCtx.drawImage(bgCanvas, 0, 0);
       }
+    } else {
+      console.warn("[Export] No cover image found!");
     }
 
     // 2. Dessiner le contenu principal par-dessus (sans le fond)
