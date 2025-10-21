@@ -20,7 +20,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "dotenv": "^16.5.0",
-    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.523.0",
     "react": "^19.1.0",

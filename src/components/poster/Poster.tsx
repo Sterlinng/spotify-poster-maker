@@ -144,7 +144,6 @@ export default function Poster({
           <img
             src={coverDataUrl}
             alt=""
-            crossOrigin="anonymous"
             style={{
               width: "100%",
               height: "100%",
@@ -220,7 +219,6 @@ export default function Poster({
           <img
             src={coverDataUrl}
             alt={album.name}
-            crossOrigin="anonymous"
             className="w-full h-full object-cover rounded-[4px]"
           />
         )}

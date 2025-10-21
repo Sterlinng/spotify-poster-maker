@@ -26,6 +26,7 @@ export default function PosterFrame({
     >
       <div
         ref={exportRef}
+        data-export-ref="true"
         className="flex items-center justify-center w-full h-full"
         style={{
           width: 600,
