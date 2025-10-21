@@ -16,16 +16,6 @@ async function convertImageToDataURL(url: string): Promise<string> {
   }
 }
 
-async function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
 function waitForImagesToLoad(container: HTMLElement): Promise<void> {
   const images = Array.from(container.querySelectorAll("img"));
   const unloaded = images.filter((img) => !img.complete);
