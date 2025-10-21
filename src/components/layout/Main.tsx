@@ -45,7 +45,7 @@ export default function Main() {
             setActiveColors([...activeColors, i]);
           }
         }}
-        onExport={() => exportPosterPNG(exportRef, scale)}
+        onExport={() => exportPosterPNG(exportRef, scale, blur, grain)}
       />
     </main>
   );

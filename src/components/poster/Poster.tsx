@@ -19,7 +19,6 @@ export default function Poster({
 }: PosterProps) {
   const album = useSpotifyAlbum(albumId);
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
-  const [blurredCoverUrl, setBlurredCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!album?.coverUrl) return;
@@ -88,49 +87,6 @@ export default function Poster({
     }
   }, [palette, setPalette]);
 
-  // Créer une version floutée de l'image pour l'export (html2canvas ne gère pas filter: blur)
-  useEffect(() => {
-    if (!coverDataUrl) return;
-
-    const createBlurredImage = async () => {
-      try {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-
-          // Taille réduite pour le flou (optimisation)
-          const scale = 0.5;
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-
-          // Dessiner l'image
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          // Appliquer un flou manuel via du downscaling (html2canvas compatible)
-          // On crée plusieurs passes pour simuler le flou
-          const tempCanvas = document.createElement("canvas");
-          const tempCtx = tempCanvas.getContext("2d");
-          if (!tempCtx) return;
-
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = canvas.height;
-          tempCtx.drawImage(canvas, 0, 0);
-
-          // Convertir en data URL
-          setBlurredCoverUrl(tempCanvas.toDataURL("image/png"));
-        };
-        img.src = coverDataUrl;
-      } catch (err) {
-        console.error("[Poster] Error creating blurred image:", err);
-        setBlurredCoverUrl(coverDataUrl);
-      }
-    };
-
-    createBlurredImage();
-  }, [coverDataUrl]);
-
   const MAX_VISIBLE_TRACKS = 20;
   const MAX_LINES = 10;
   const MAX_COLS = 2;
@@ -184,12 +140,10 @@ export default function Poster({
       }}
     >
       <div className="absolute inset-0 z-0 scale-[1.2] opacity-40 overflow-hidden">
-        {/* Version avec blur CSS pour l'affichage normal */}
         {coverDataUrl && (
           <img
             src={coverDataUrl}
             alt=""
-            className="export-hide"
             style={{
               width: "100%",
               height: "100%",
@@ -198,43 +152,19 @@ export default function Poster({
             }}
           />
         )}
-        {/* Version pré-floutée pour l'export (html2canvas) */}
-        {blurredCoverUrl && (
-          <img
-            src={blurredCoverUrl}
-            alt=""
-            className="export-only"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "none",
-            }}
-          />
-        )}
       </div>
 
       <div className="absolute inset-0 z-0 bg-black/40" />
 
-      {/* Grain SVG pour l'affichage normal (masqué pendant l'export) */}
+      {/* Grain SVG pour l'affichage normal */}
       <div
-        className="absolute inset-0 z-50 pointer-events-none export-hide"
+        className="absolute inset-0 z-50 pointer-events-none grain-svg"
         style={{
           backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='grain'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='5' stitchTiles='stitch'/><feColorMatrix type='matrix' values='-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23grain)'/></svg>")`,
           backgroundRepeat: "repeat",
           backgroundSize: "100px 100px",
           opacity: (grain / 100) * 0.4,
           mixBlendMode: "screen",
-        }}
-      />
-      <div
-        id="grain-bake"
-        className="absolute inset-0 z-50 pointer-events-none"
-        style={{
-          backgroundRepeat: "repeat",
-          backgroundSize: "100px 100px",
-          opacity: (grain / 100) * 0.4,
-          display: "none",
         }}
       />
 
