@@ -1,4 +1,4 @@
-import { toPng } from "html-to-image";
+import { toPng, toCanvas } from "html-to-image";
 
 async function convertImageToDataURL(url: string): Promise<string> {
   try {
@@ -14,6 +14,16 @@ async function convertImageToDataURL(url: string): Promise<string> {
     console.error("Error converting image to data URL:", error);
     return url;
   }
+}
+
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
 function waitForImagesToLoad(container: HTMLElement): Promise<void> {
@@ -41,17 +51,25 @@ export async function exportPosterPNG(
 
   await (document as Document & { fonts: FontFaceSet }).fonts.ready;
 
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
   // Convertir toutes les images en data URLs pour éviter les problèmes CORS sur mobile
   const images = Array.from(ref.current.querySelectorAll("img"));
   const originalSrcs: string[] = [];
+
+  console.log(`[Export] Found ${images.length} images to process`);
 
   for (let i = 0; i < images.length; i++) {
     const img = images[i] as HTMLImageElement;
     originalSrcs[i] = img.src;
 
+    console.log(`[Export] Image ${i}: src starts with data: ${img.src.substring(0, 20)}...`);
+    console.log(`[Export] Image ${i}: complete = ${img.complete}, naturalWidth = ${img.naturalWidth}`);
+
     // Si l'image n'est pas déjà une data URL ou est vide, la convertir
     if (img.src && !img.src.startsWith("data:")) {
       try {
+        console.log(`[Export] Converting image ${i} to data URL`);
         const dataURL = await convertImageToDataURL(img.src);
         img.src = dataURL;
         // Forcer le rechargement de l'image
@@ -63,14 +81,17 @@ export async function exportPosterPNG(
             img.onerror = () => resolve(null);
           }
         });
+        console.log(`[Export] Image ${i} converted successfully`);
       } catch (error) {
-        console.error("Error converting image:", error);
+        console.error(`[Export] Error converting image ${i}:`, error);
       }
+    } else {
+      console.log(`[Export] Image ${i} is already a data URL`);
     }
   }
 
   // Attendre un peu plus pour s'assurer que tout est rendu
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, isMobile ? 500 : 300));
   await waitForImagesToLoad(ref.current);
 
   const noiseCanvas = document.createElement("canvas");
@@ -98,24 +119,46 @@ export async function exportPosterPNG(
   const node = ref.current;
   const rect = node.getBoundingClientRect();
 
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const pr = isMobile ? 3 : 4;
 
-  const dataUrl = await toPng(node, {
-    cacheBust: true,
-    pixelRatio: pr,
-    width: rect.width / scale,
-    height: rect.height / scale,
-    filter: (n) =>
-      !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
-    style: {
-      width: `${rect.width / scale}px`,
-      height: `${rect.height / scale}px`,
-      transform: "none",
-      transformOrigin: "top left",
-    },
-    backgroundColor: "#000",
-  });
+  let dataUrl: string;
+
+  if (isMobile) {
+    // Sur mobile, utiliser toCanvas puis convertir en PNG pour plus de fiabilité
+    const canvas = await toCanvas(node, {
+      cacheBust: true,
+      pixelRatio: pr,
+      width: rect.width / scale,
+      height: rect.height / scale,
+      filter: (n) =>
+        !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
+      style: {
+        width: `${rect.width / scale}px`,
+        height: `${rect.height / scale}px`,
+        transform: "none",
+        transformOrigin: "top left",
+      },
+      backgroundColor: "#000",
+    });
+
+    dataUrl = canvas.toDataURL("image/png", 1.0);
+  } else {
+    dataUrl = await toPng(node, {
+      cacheBust: true,
+      pixelRatio: pr,
+      width: rect.width / scale,
+      height: rect.height / scale,
+      filter: (n) =>
+        !(n.tagName === "LINK" && n.getAttribute("rel") === "stylesheet"),
+      style: {
+        width: `${rect.width / scale}px`,
+        height: `${rect.height / scale}px`,
+        transform: "none",
+        transformOrigin: "top left",
+      },
+      backgroundColor: "#000",
+    });
+  }
 
   // Restaurer les URLs originales des images
   for (let i = 0; i < images.length; i++) {

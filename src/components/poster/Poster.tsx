@@ -27,36 +27,52 @@ export default function Poster({
 
     (async () => {
       try {
+        console.log(`[Poster] Fetching cover image from: ${album.coverUrl}`);
+        // Fetch l'image
         const res = await fetch(album.coverUrl);
         const blob = await res.blob();
+        console.log(`[Poster] Blob fetched, size: ${blob.size} bytes, type: ${blob.type}`);
 
-        // Créer une data URL directement depuis le blob pour une meilleure compatibilité mobile
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setCoverDataUrl(reader.result as string);
-        };
-        reader.onerror = () => {
-          console.error("Error reading blob");
-          setCoverDataUrl(album.coverUrl);
-        };
-        reader.readAsDataURL(blob);
+        // Convertir en ImageBitmap et dessiner sur canvas
+        const bmp = await createImageBitmap(blob);
+        console.log(`[Poster] ImageBitmap created: ${bmp.width}x${bmp.height}`);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: false });
+
+        if (ctx) {
+          // Dessiner l'image
+          ctx.drawImage(bmp, 0, 0);
+
+          // Convertir en PNG pour éviter les problèmes de compression JPEG sur mobile
+          const dataUrl = canvas.toDataURL("image/png");
+          console.log(`[Poster] Data URL created, length: ${dataUrl.length}, starts with: ${dataUrl.substring(0, 30)}`);
+          setCoverDataUrl(dataUrl);
+
+          // Nettoyer
+          bmp.close();
+        }
       } catch (err) {
-        console.error(err);
-        // En cas d'erreur, essayer de créer une data URL via canvas
+        console.error("[Poster] Error converting cover to data URL:", err);
+        // Fallback: essayer avec FileReader
         try {
+          console.log("[Poster] Trying fallback with FileReader");
           const res = await fetch(album.coverUrl);
           const blob = await res.blob();
-          const bmp = await createImageBitmap(blob);
-          const canvas = document.createElement("canvas");
-          canvas.width = bmp.width;
-          canvas.height = bmp.height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(bmp, 0, 0);
-            setCoverDataUrl(canvas.toDataURL("image/jpeg", 0.95));
-          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            console.log("[Poster] FileReader success");
+            setCoverDataUrl(reader.result as string);
+          };
+          reader.onerror = () => {
+            console.error("[Poster] FileReader error");
+            setCoverDataUrl(album.coverUrl);
+          };
+          reader.readAsDataURL(blob);
         } catch (fallbackErr) {
-          console.error("Fallback error:", fallbackErr);
+          console.error("[Poster] Fallback error:", fallbackErr);
           setCoverDataUrl(album.coverUrl);
         }
       }
@@ -124,16 +140,19 @@ export default function Poster({
       }}
     >
       <div className="absolute inset-0 z-0 scale-[1.2] opacity-40 overflow-hidden">
-        <img
-          src={coverDataUrl || ""}
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: `blur(${20 + blur}px)`,
-          }}
-        />
+        {coverDataUrl && (
+          <img
+            src={coverDataUrl}
+            alt=""
+            crossOrigin="anonymous"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              filter: `blur(${20 + blur}px)`,
+            }}
+          />
+        )}
       </div>
 
       <div className="absolute inset-0 z-0 bg-black/40" />
@@ -197,15 +216,15 @@ export default function Poster({
       </div>
 
       <div className="relative z-40 w-[500px] h-[500px] mt-[-10px]">
-        <img
-          src={coverDataUrl || ""}
-          alt={album.name}
-          className="w-full h-full object-cover rounded-[4px]"
-        />
+        {coverDataUrl && (
+          <img
+            src={coverDataUrl}
+            alt={album.name}
+            crossOrigin="anonymous"
+            className="w-full h-full object-cover rounded-[4px]"
+          />
+        )}
       </div>
-
-      {/* <img> caché pour forcer html-to-image à charger l'image background */}
-      <img src={coverDataUrl || ""} style={{ display: "none" }} alt="" />
 
       <div
         className="relative z-40 flex justify-between items-start w-full px-[50px] mt-2"
